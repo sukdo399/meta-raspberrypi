@@ -8,7 +8,6 @@ RDEPENDS_${PN} = "\
     optee-os \
     optee-client \
     optee-test \
-    u-boot \
 "
 
 RRECOMMENDS_${PN} = "\

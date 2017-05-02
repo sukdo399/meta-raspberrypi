@@ -111,13 +111,16 @@ do_deploy() {
         echo "dtoverlay=vc4-kms-v3d,${VC4_CMA_SIZE}" >> ${DEPLOYDIR}/bcm2835-bootfiles/config.txt
     fi
 
+    echo "arm_control=0x200" >> ${DEPLOYDIR}/bcm2835-bootfiles/config.txt
+    echo "kernel_old=1" >> ${DEPLOYDIR}/bcm2835-bootfiles/config.txt
     echo "kernel=u-boot-jtag.bin" >> ${DEPLOYDIR}/bcm2835-bootfiles/config.txt
+    echo "disable_commandline_tags=1" >> ${DEPLOYDIR}/bcm2835-bootfiles/config.txt
 }
 
 do_deploy_append_raspberrypi3-64() {
     # Device Tree support
     echo "# Load correct Device Tree for Aarch64" >>${DEPLOYDIR}/bcm2835-bootfiles/config.txt
-    echo "device_tree=bcm2710-rpi-3-b.dtb" >>${DEPLOYDIR}/bcm2835-bootfiles/config.txt
+    echo "# device_tree=bcm2710-rpi-3-b.dtb" >>${DEPLOYDIR}/bcm2835-bootfiles/config.txt
 }
 
 addtask deploy before do_package after do_install

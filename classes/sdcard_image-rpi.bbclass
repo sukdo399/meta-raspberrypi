@@ -35,7 +35,7 @@ KERNEL_INITRAMFS ?= ""
 # Kernel image name
 SDIMG_KERNELIMAGE_raspberrypi  ?= "kernel.img"
 SDIMG_KERNELIMAGE_raspberrypi2 ?= "kernel7.img"
-SDIMG_KERNELIMAGE_raspberrypi3-64 ?= "kernel8.img"
+SDIMG_KERNELIMAGE_raspberrypi3-64 ?= "Image"
 
 # Boot partition volume id
 BOOTDD_VOLUME_ID ?= "${MACHINE}"
