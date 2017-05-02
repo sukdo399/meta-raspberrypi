@@ -8,6 +8,7 @@ inherit deploy
 include recipes-bsp/common/firmware.inc
 
 RDEPENDS_${PN} = "rpi-config"
+DEPENDS = "u-boot arm-trusted-firmware"
 
 COMPATIBLE_MACHINE = "raspberrypi"
 
@@ -30,6 +31,15 @@ do_deploy() {
 
     # Add stamp in deploy directory
     touch ${DEPLOYDIR}/${PN}/${PN}-${PV}.stamp
+
+    # ARM Trusted Firmware
+    dd if=/dev/zero of=scratch bs=1c count=131072 && \
+    cat ${DEPLOY_DIR}/images/${MACHINE}/bl31.bin scratch > ${DEPLOYDIR}/bl31.tmp #&& \
+    dd if=${DEPLOYDIR}/bl31.tmp of=${DEPLOYDIR}/bl31.head bs=1c count=131072 && \
+    cat ${DEPLOYDIR}/bl31.head ${DEPLOY_DIR}/images/${MACHINE}/tee-pager.bin > ${DEPLOYDIR}/bcm2835-bootfiles/optee.bin
+
+    cp ${DEPLOY_DIR}/images/${MACHINE}/u-boot-jtag.bin ${DEPLOY_DIR}/images/${MACHINE}/bcm2835-bootfiles/u-boot-jtag.bin
+    cp ${DEPLOY_DIR}/images/${MACHINE}/uboot.env ${DEPLOY_DIR}/images/${MACHINE}/bcm2835-bootfiles/uboot.env
 }
 
 addtask deploy before do_package after do_install

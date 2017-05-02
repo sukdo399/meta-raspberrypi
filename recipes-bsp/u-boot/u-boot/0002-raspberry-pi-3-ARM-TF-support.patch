@@ -1,0 +1,178 @@
+From 3ea1b716420eaaeec75e4c35d93e2bb79b957627 Mon Sep 17 00:00:00 2001
+From: Seokha Ko <sh.ko@lge.com>
+Date: Sun, 30 Apr 2017 14:54:46 +0900
+Subject: [PATCH 2/2] raspberry pi 3, ARM TF support.
+
+:Release Notes:
+raspberry pi 3, ARM TF support.
+
+:Detailed Notes:
+raspberry pi 3, ARM TF support.
+
+:Testing Performed:
+
+:QA Notes:
+
+:Issues Addressed:
+---
+ .gitignore                |  2 ++
+ arm-tf-rpi3/head.S        | 88 +++++++++++++++++++++++++++++++++++++++++++++++
+ arm-tf-rpi3/uboot.env.txt | 41 ++++++++++++++++++++++
+ 3 files changed, 131 insertions(+)
+ create mode 100644 arm-tf-rpi3/head.S
+ create mode 100644 arm-tf-rpi3/uboot.env.txt
+
+diff --git a/.gitignore b/.gitignore
+index 33abbd3d07..1e8d207fa2 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -84,3 +84,5 @@ GTAGS
+ *.orig
+ *~
+ \#*#
++
++uboot.env
+diff --git a/arm-tf-rpi3/head.S b/arm-tf-rpi3/head.S
+new file mode 100644
+index 0000000000..ec155f9e13
+--- /dev/null
++++ b/arm-tf-rpi3/head.S
+@@ -0,0 +1,88 @@
++/*
++ * Copyright (c) 2016, Linaro Limited
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright notice,
++ * this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ * this list of conditions and the following disclaimer in the documentation
++ * and/or other materials provided with the distribution.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
++ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
++ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
++ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++ * POSSIBILITY OF SUCH DAMAGE.
++ */
++/*
++ * Reverse-engineered from head.bin previously committed in the Git repository.
++ * Build with:
++ *   aarch64-linux-gnu-as head.S -o head.o
++ *   aarch64-linux-gnu-objcopy -O binary head.o head.bin
++ */
++		mov	x0, #0x40000000
++		str	wzr, [x0]
++		mov	w1, #0x80000000
++		str	w1, [x0, #8]
++
++		ldr	x0, _19_2_MHz
++		msr	cntfrq_el0, x0
++
++		msr	cntvoff_el2, xzr
++
++		mov	x0, #0x33ff
++		msr	cptr_el3, x0
++
++		mov	x0, #0x5b0
++		msr	scr_el3, x0
++
++		mov	x0, #0x40
++		msr	s3_1_c15_c2_1, x0
++
++		mrs	x6, mpidr_el1
++		and	x6, x6, #0x3
++		cbz	x6, core0
++
++		adr	x5, spin_table
++spin:
++		wfe
++		ldr	x4, [x5, x6, lsl #3]
++		cbz	x4, spin
++		mov	x0, #0x0
++		b	1f
++core0:
++		ldr	x4, core0_init
++		ldr	x0, core0_init_parm
++1:
++		mov	x1, #0x0
++		mov	x2, #0x0
++		mov	x3, #0x0
++		br	x4
++
++_19_2_MHz:
++		.word	0x0124f800
++		.rept	23
++		.word	0x0
++		.endr
++		.balign	8, 0
++core0_init:
++		.word	0x8000
++		.balign	8, 0
++spin_table:
++		.rept	8
++		.word	0x0
++		.endr
++core0_init_parm:
++		.word	0x100
++		.p2align	15, 0
++
+diff --git a/arm-tf-rpi3/uboot.env.txt b/arm-tf-rpi3/uboot.env.txt
+new file mode 100644
+index 0000000000..ee08d5d1ba
+--- /dev/null
++++ b/arm-tf-rpi3/uboot.env.txt
+@@ -0,0 +1,41 @@
++# generic params
++bootdelay=3
++stderr=serial,lcd
++stdin=serial,usbkbd
++stdout=serial,lcd
++
++# CPU config
++cpu=armv8
++smp=on
++
++# Console config
++baudrate=115200
++ttyconsole=ttyS0
++
++# Kernel/firmware/dtb filenames & load addresses
++atf_load_addr=0x08400000
++atf_file=optee.bin
++boot_it=booti ${kernel_addr_r} - ${fdt_addr_r}
++fdt_addr_r=0x1700000
++fdtfile=bcm2710-rpi-3-b.dtb
++filesize=5a65c
++initrd_high=ffffffff
++kernel_addr_r=0x10000000
++
++# NFS/TFTP boot configuraton
++gatewayip=192.168.1.1
++netmask=255.255.255.0
++tftpserverip=192.168.1.5
++nfspath=/opt/linaro/nfs
++
++# bootcmd & bootargs configuration
++bootcmd=run mmcboot
++load_dtb=fatload mmc 0:1 ${fdt_addr_r} ${fdtfile}
++load_firmware=fatload mmc 0:1 ${atf_load_addr} ${atf_file}
++load_kernel=fatload mmc 0:1 ${kernel_addr_r} Image
++mmcboot=run load_kernel; run load_dtb; run load_firmware; run set_bootargs_tty set_bootargs_mmc set_common_args; run boot_it
++nfsboot=usb start; dhcp ${kernel_addr_r} ${tftpserverip}:Image; dhcp ${fdt_addr_r} ${tftpserverip}:${fdtfile}; dhcp ${atf_load_addr} ${tftpserverip}:${atf_file}; run set_bootargs_tty set_bootargs_nfs set_common_args; run boot_it
++set_bootargs_tty=setenv bootargs console=${ttyconsole},${baudrate}
++set_bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs rw rootfstype=nfs nfsroot=${tftpserverip}:${nfspath},udp,vers=3 ip=dhcp
++set_bootargs_mmc=setenv bootargs ${bootargs} root=/dev/mmcblk0p2 rw rootfs=ext4
++set_common_args=setenv bootargs ${bootargs} ignore_loglevel dma.dmachans=0x7f35 rootwait 8250.nr_uarts=1 elevator=deadline fsck.repair=yes smsc95xx.macaddr=${ethaddr} 'bcm2708_fb.fbwidth=1920 bcm2708_fb.fbheight=1080 vc_mem.mem_base=0x3dc00000 vc_mem.mem_size=0x3f000000'
+-- 
+2.11.0
+

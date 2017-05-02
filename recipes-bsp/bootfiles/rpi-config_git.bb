@@ -110,6 +110,8 @@ do_deploy() {
         echo "# Enable VC4 Graphics" >> ${DEPLOYDIR}/bcm2835-bootfiles/config.txt
         echo "dtoverlay=vc4-kms-v3d,${VC4_CMA_SIZE}" >> ${DEPLOYDIR}/bcm2835-bootfiles/config.txt
     fi
+
+    echo "kernel=u-boot-jtag.bin" >> ${DEPLOYDIR}/bcm2835-bootfiles/config.txt
 }
 
 do_deploy_append_raspberrypi3-64() {

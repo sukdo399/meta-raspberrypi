@@ -1,0 +1,32 @@
+From 893000fdaa88e96240f4ad6ca405393b641141ec Mon Sep 17 00:00:00 2001
+From: Seokha Ko <sh.ko@lge.com>
+Date: Sun, 30 Apr 2017 17:17:40 +0900
+Subject: [PATCH] enable CONFIG_TEE and CONFIG_OPTEE
+
+:Release Notes:
+enable CONFIG_TEE and CONFIG_OPTEE
+
+:Detailed Notes:
+enable CONFIG_TEE and CONFIG_OPTEE
+
+:Testing Performed:
+
+:QA Notes:
+
+:Issues Addressed:
+---
+ rpi3.conf | 2 ++
+ 1 file changed, 2 insertions(+)
+ create mode 100644 rpi3.conf
+
+diff --git a/rpi3.conf b/rpi3.conf
+new file mode 100644
+index 000000000000..07554cf843d3
+--- /dev/null
++++ b/rpi3.conf
+@@ -0,0 +1,2 @@
++CONFIG_TEE=y
++CONFIG_OPTEE=y
+-- 
+2.11.0
+
